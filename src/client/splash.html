@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" type="text/css" href="splash/splash.css" />
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width, height=device-height, user-scalable=0"
+    />
+    <title>devvit</title>
+  </head>
+  <body class="app">
+    <div class="app-container">
+      <!-- Splash screen content -->
+      <!-- <div class="splash-card">
+      
+      </div> -->
+
+      <div class="splash-header">
+        <img src="logo.png" alt="Last Word Standing" class="splash-logo" />
+
+        <!-- <div class="splash-icon">⚡</div>
+        <h1 class="splash-title">Last Word</h1>
+        <h1 class="splash-title">Standing</h1> -->
+        <!-- <p class="splash-subtitle">
+          Chain words. Beat the clock. Dominate the leaderboard.
+        </p> -->
+      </div>
+
+      <div class="splash-body">
+        <p class="splash-subtitle">Chain words, beat the clock</p>
+        <button class="start-button" id="start-button">Play</button>
+        <!-- Leaderboard preview -->
+        <div class="top-players-preview">
+          <!-- <h4>Top Players Today</h4> -->
+          <div id="top-players" class="top-players-list">
+            <div class="top-player-placeholder">Loading top players…</div>
+          </div>
+          <button class="leaderboard-button" id="leaderboard-button">
+            View Full Leaderboard &gt;
+          </button>
+        </div>
+      </div>
+      <footer class="footer">
+        <div class="docs-link" tabindex="0" id="docs-link">Docs</div>
+        <span class="divider">|</span>
+        <div class="docs-link" tabindex="0" id="playtest-link">r/Devvit</div>
+        <span class="divider">|</span>
+        <div class="docs-link" tabindex="0" id="discord-link">Discord</div>
+      </footer>
+      <script type="module" src="splash/splash.ts" defer></script>
+    </div>
+  </body>
+</html>

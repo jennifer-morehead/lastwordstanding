@@ -1,0 +1,260 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  color: #000000;
+}
+
+body {
+  background: linear-gradient(135deg, #0052ff 0%, #0043cc 100%);
+  margin: 0;
+  padding: 0; /* small padding around to avoid flush to viewport edges */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  color: #000;
+}
+
+.app {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* top align */
+  min-height: 100vh;
+}
+
+.app-container {
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  border-radius: 16px;
+  box-shadow: none;
+  border: none;
+  overflow: hidden;
+}
+
+.title {
+  font-size: 1.5em;
+  font-weight: bold;
+  text-align: center;
+}
+
+.description {
+  font-size: 1em;
+  text-align: center;
+  color: #5c6c74;
+}
+
+.start-button {
+  animation: pulseGlow 3s ease-in-out infinite;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff5520 100%);
+  color: white;
+  border: none;
+  padding: 8px 48px;
+  border-radius: 50px;
+  font-size: 40px;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+  /* transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3); */
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+  }
+  50% {
+    box-shadow: 0 6px 18px rgba(255, 170, 90, 0.8);
+  }
+}
+
+/* Splash card styles to match game look */
+.splash-card {
+  width: 100%;
+  max-width: 640px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(2, 6, 23, 0.2);
+}
+
+.splash-header {
+  color: white;
+  margin-top: 24px;
+  padding: 16px 24px 0px;
+  text-align: center;
+}
+
+.splash-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.splash-logo {
+  transform: translateX(16px);
+  max-width: 60%; /* responsive on small screens */
+}
+
+.splash-title {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.splash-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 16px;
+}
+
+.splash-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.top-players-preview {
+  margin: 12px 0px;
+}
+
+.top-players-list {
+  margin: 12px 0px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  background: white;
+  border-radius: 8px;
+  gap: 8px;
+  border: 1px solid gray;
+}
+
+.top-player-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: red;
+}
+
+.top-player-rank {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 400px;
+}
+
+.top-player-rank.gold {
+  background: #f59e0b;
+  color: white;
+}
+.top-player-rank.silver {
+  background: #9ca3af;
+  color: white;
+}
+.top-player-rank.bronze {
+  background: #d97706;
+  color: white;
+}
+
+.top-player-name {
+  margin-right: 4px;
+  font-weight: 600;
+  color: #1f2937;
+}
+.top-player-score {
+  margin-left: auto;
+  color: #0052ff;
+  font-weight: 700;
+}
+
+.top-player-placeholder {
+  color: #6b7280;
+}
+
+.howto {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.howto-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #96a3af;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.howto-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.howto-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+.howto-check {
+  color: #10b981;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.splash-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.leaderboard-button {
+  display: block;
+  margin: 0 auto;
+  background: none;
+  border: none;
+  color: #ff6b35;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.leaderboard-button:hover {
+  text-decoration: underline;
+}
+
+.footer {
+  color: white;
+  padding: 8px 16px;
+  font-size: 0.8em;
+  text-align: center;
+  display: flex; /* Enable flexbox */
+  justify-content: center; /* Center items horizontally */
+  gap: 12px; /* Space between items */
+  flex-wrap: nowrap; /* Keep items on one line */
+  align-items: center; /* Vertically center items */
+}
+
+.docs-link {
+  cursor: pointer;
+  color: white;
+}
+
+.divider {
+  color: rgba(0, 0, 0, 0.1);
+}

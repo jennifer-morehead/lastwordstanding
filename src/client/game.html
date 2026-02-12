@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" type="text/css" href="game/game.css" />
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width, height=device-height, user-scalable=0"
+    />
+    <title>devvit</title>
+  </head>
+
+  <body class="app">
+    <!-- HOME SCREEN -->
+    <div id="home-screen" style="display: none">
+      <!-- Header with branding and user info -->
+      <div class="header-section home-header">
+        <div class="header-content">
+          <div class="title-row home-title-row">
+            <h1 class="game-title">⚡ Last Word Standing</h1>
+          </div>
+          <div class="meta-row">
+            <div class="user-attempt">
+              <div class="username">
+                <span id="player-username">u/player123</span>
+              </div>
+            </div>
+            <div class="points-display">
+              <span class="points-number" id="player-points">0</span>
+              <span class="points-label">points</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main content -->
+      <div class="home-content">
+        <!-- How to Play Section -->
+        <div class="rules-section">
+          <h3 class="section-title">HOW TO PLAY</h3>
+          <ul class="rules-list">
+            <li>
+              <span class="checkmark">✓</span> Start with the last letter of the
+              previous word
+            </li>
+            <li>
+              <span class="checkmark">✓</span> No repeating words in your chain
+            </li>
+            <li><span class="checkmark">✓</span> 7 seconds per word</li>
+          </ul>
+        </div>
+
+        <!-- Today's Special Rule -->
+        <div class="special-rule-section">
+          <h3 class="special-rule-title">⭐ TODAY'S SPECIAL RULE</h3>
+          <p class="special-rule-text" id="daily-rule-text">
+            🔶 No words ending in 'S'
+          </p>
+        </div>
+
+        <!-- Start Game Button -->
+        <button class="start-game-btn" id="start-game">Tap to Start</button>
+        <!-- Start Game Button -->
+        <button class="btn-leaderboard-go" id="leaderboard-btn">
+          View Leaderboard &gt;
+        </button>
+
+        <!-- Footer text -->
+        <p class="home-footer-text">
+          Play unlimited times • No signup required
+        </p>
+      </div>
+    </div>
+
+    <!-- GAMEPLAY SCREEN -->
+    <div id="gameplay-screen" style="display: none">
+      <!-- Header with branding and user info -->
+      <div class="header-section">
+        <!-- <div class="header-top">
+          <div class="header-left">
+            <span class="back-arrow">← Home</span>
+          </div>
+          <div class="header-right"></div>
+        </div> -->
+
+        <div class="header-content">
+          <div class="title-row">
+            <h1 class="game-title">⚡ Last Word Standing</h1>
+          </div>
+          <div class="meta-row">
+            <div class="user-attempt">
+              <div class="username">
+                <span id="gameplay-username">u/player123</span>
+              </div>
+            </div>
+            <div class="points-display">
+              <span class="points-number" id="gameplay-points">0</span>
+              <span class="points-label">points</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Content -->
+      <div class="gameplay-content">
+        <!-- Current Word Section -->
+        <div class="current-word-section">
+          <div class="current-word-header">
+            <span class="current-word-label">CURRENT WORD</span>
+            <span class="timer" id="game-timer">7s</span>
+          </div>
+          <div class="word-display" id="current-word-display">GAME</div>
+          <div class="next-letter-hint" id="next-letter-hint">Next: E____</div>
+        </div>
+
+        <!-- Your Chain Section -->
+        <div class="chain-section">
+          <span class="chain-label">YOUR CHAIN</span>
+          <div class="word-chain" id="word-chain">
+            <span class="chain-word">✓ GAME</span>
+            <span class="chain-word">✓ EGG</span>
+          </div>
+        </div>
+
+        <!-- Input and Submit -->
+        <div class="input-section">
+          <div class="input-row">
+            <input
+              type="text"
+              class="word-input"
+              id="word-input"
+              placeholder="Enter your word..."
+              autocomplete="off"
+            />
+            <div class="timer timer-side" id="game-timer-bottom">7s</div>
+          </div>
+          <button class="submit-btn" id="submit-word">Submit Word</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="gameover-screen" style="display: none">
+      <!-- Header with branding and user info -->
+      <div class="header-section">
+        <!-- <div class="header-top">
+          <div class="header-left">
+            <span class="back-arrow">← Home</span>
+          </div>
+          <div class="header-right"></div>
+        </div> -->
+
+        <div class="header-content">
+          <div class="title-row">
+            <h1 class="game-title">⚡ Last Word Standing</h1>
+          </div>
+          <div class="meta-row">
+            <div class="user-attempt">
+              <div class="username">
+                <span id="gameover-username">u/player123</span>
+              </div>
+            </div>
+            <div class="points-display">
+              <span class="points-number" id="gameover-points">0</span>
+              <span class="points-label">points</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Over Content -->
+      <div class="gameover-content">
+        <div class="gameover-card">
+          <h2 class="gameover-title">Game Over!</h2>
+          <div class="word-count" id="final-word-count">1 words</div>
+
+          <!-- <div class="gameover-reason" id="gameover-reason">
+            <span>Time ran out! ⏰</span>
+          </div> -->
+
+          <div class="gameover-buttons">
+            <button class="btn btn-play-again" id="play-again-btn">
+              Play Again
+            </button>
+            <button class="btn btn-secondary home-btn">Home</button>
+            <!-- <button
+              class="btn btn-leaderboard-go"
+              id="gameover-leaderboard-btn"
+            >
+              Leaderboard
+            </button> -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD SCREEN -->
+    <div id="leaderboard-screen" style="display: none">
+      <div class="leaderboard-content">
+        <div class="leaderboard-icon-badge">🏆</div>
+        <h1 class="leaderboard-title">Leaderboard</h1>
+        <p class="leaderboard-subtitle">Today's Top Players</p>
+
+        <!-- Leaderboard List -->
+        <div class="leaderboard-list" id="leaderboard-list">
+          <!-- Player entries will be dynamically populated -->
+        </div>
+
+        <!-- Call to Action -->
+        <button class="start-game-btn play-now-btn">Play Now</button>
+        <button class="btn btn-secondary home-btn">Home</button>
+        <p class="leaderboard-update-text">Leaderboard updates in real-time</p>
+      </div>
+    </div>
+
+    <script type="module" src="game/game.ts" defer></script>
+  </body>
+</html>
