@@ -1,8 +1,13 @@
 import { navigateTo, context, requestExpandedMode } from "@devvit/web/client";
+import { LeaderboardResponse } from "../../shared/types/api";
 
-const docsLink = document.getElementById("docs-link") as HTMLDivElement;
-const playtestLink = document.getElementById("playtest-link") as HTMLDivElement;
-const discordLink = document.getElementById("discord-link") as HTMLDivElement;
+const docsLink = document.getElementById("docs-link") as HTMLDivElement | null;
+const playtestLink = document.getElementById(
+  "playtest-link",
+) as HTMLDivElement | null;
+const discordLink = document.getElementById(
+  "discord-link",
+) as HTMLDivElement | null;
 const startButton = document.getElementById(
   "start-button",
 ) as HTMLButtonElement;
@@ -32,19 +37,44 @@ leaderboardButton?.addEventListener("click", (e) => {
   requestExpandedMode(e, "game");
 });
 
-docsLink.addEventListener("click", () => {
+docsLink?.addEventListener("click", () => {
   navigateTo("https://developers.reddit.com/docs");
 });
 
-playtestLink.addEventListener("click", () => {
+playtestLink?.addEventListener("click", () => {
   navigateTo("https://www.reddit.com/r/Devvit");
 });
 
-discordLink.addEventListener("click", () => {
+discordLink?.addEventListener("click", () => {
   navigateTo("https://discord.com/invite/R7yu2wh9Qz");
 });
 
 const titleElement = document.getElementById("title") as HTMLHeadingElement;
+
+function updatePostNumberLabel(postNumber?: number, ruleLetter?: string) {
+  const label = document.getElementById("post-number-label");
+  if (!label) return;
+
+  if (
+    typeof postNumber === "number" &&
+    postNumber > 0 &&
+    typeof ruleLetter === "string" &&
+    ruleLetter.trim().length > 0
+  ) {
+    label.textContent = `Post ${postNumber}: No words ending in ${ruleLetter.toUpperCase()}`;
+    label.hidden = false;
+    return;
+  }
+
+  if (typeof postNumber === "number" && postNumber > 0) {
+    label.textContent = `Post ${postNumber}`;
+    label.hidden = false;
+    return;
+  }
+
+  label.textContent = "";
+  label.hidden = true;
+}
 
 function formatUsername(name: string | null | undefined): string {
   const trimmed = (name ?? "").trim();
@@ -70,10 +100,12 @@ async function fetchTopPlayers(top = 3) {
   try {
     const resp = await fetch(`/api/leaderboard?top=${top}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
+    const data = (await resp.json()) as LeaderboardResponse;
+    updatePostNumberLabel(data.postNumber, data.ruleLetter);
     renderTopPlayers((data.entries || []).slice(0, 3));
   } catch (err) {
     const container = document.getElementById("top-players");
+    updatePostNumberLabel();
     if (container)
       container.innerHTML = `<div class="top-player-placeholder">Failed to load leaderboard</div>`;
     console.warn("Failed to load leaderboard:", err);

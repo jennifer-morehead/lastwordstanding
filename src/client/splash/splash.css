@@ -26,6 +26,8 @@ body {
 .app-container {
   width: 100vw;
   height: 100vh;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
   border-radius: 16px;
   box-shadow: none;
@@ -81,7 +83,7 @@ body {
 
 .splash-header {
   color: white;
-  margin-top: 24px;
+  margin-top: 40px;
   padding: 16px 24px 0px;
   text-align: center;
 }
@@ -113,14 +115,26 @@ body {
 
 .splash-body {
   display: flex;
+  flex: 1;
+  width: 100%;
   flex-direction: column;
   gap: 10px;
   align-items: center;
+  padding: 0 40px 24px;
+}
+
+.splash-subtitle {
+  margin-top: auto;
+}
+
+.start-button {
   margin-top: 8px;
 }
 
 .top-players-preview {
-  margin: 12px 0px;
+  width: min(360px, 100%);
+  margin-top: auto;
+  margin-bottom: 10vh;
 }
 
 .top-players-list {
@@ -132,6 +146,35 @@ body {
   border-radius: 8px;
   gap: 8px;
   border: 1px solid gray;
+}
+
+@media (max-width: 900px) {
+  .splash-header {
+    margin-top: 24px;
+  }
+
+  .splash-logo {
+    max-width: 70%;
+  }
+
+  .splash-body {
+    padding: 0 32px 20px;
+  }
+
+  .splash-subtitle {
+    padding: 12px;
+  }
+
+  .start-button {
+    font-size: 36px;
+    padding: 8px 40px;
+  }
+
+  .top-players-preview {
+    width: 100%;
+    max-width: 340px;
+    margin-bottom: 8vh;
+  }
 }
 
 .top-player-item {
@@ -235,7 +278,15 @@ body {
   cursor: pointer;
 }
 .leaderboard-button:hover {
-  text-decoration: underline;
+  text-decoration: none;
+}
+
+.post-number-label {
+  margin-top: 6px;
+  text-align: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .footer {

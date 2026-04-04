@@ -1,4 +1,12 @@
-import { InitResponse } from "../../shared/types/api";
+import {
+  AnalyticsEventRequest,
+  AnalyticsSummaryResponse,
+  EndRunScoreRequest,
+  EndRunScoreResponse,
+  InitResponse,
+  LeaderboardResponse,
+  ScoreBreakdown,
+} from "../../shared/types/api";
 import wordListData from "word-list-json/words.json";
 
 // Build a Set for O(1) lookups - filter to reasonable game words (2-10 letters)
@@ -10,6 +18,8 @@ const validWords = new Set<string>(
 
 type DailyRuleResponse = { letter?: string };
 
+const ADMIN_USERNAME = "theotherchupe";
+
 let currentRuleLetter = "S";
 let ruleLoaded = false;
 let cachedWordList: string[] | null = null;
@@ -19,6 +29,17 @@ function formatUsername(name: string | null | undefined): string {
   if (!trimmed) return "u/player123";
   if (/^u\//i.test(trimmed)) return trimmed;
   return `u/${trimmed}`;
+}
+
+function normalizeUsername(name: string | null | undefined): string {
+  return String(name ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^u\//, "");
+}
+
+function isAdminUsername(name: string | null | undefined): boolean {
+  return normalizeUsername(name) === ADMIN_USERNAME;
 }
 
 function formatRuleText(letter: string): string {
@@ -60,7 +81,7 @@ async function loadDailyRule(): Promise<string> {
 // GAME STATE SYSTEM
 // ============================================================================
 
-type GameScreen = "home" | "gameplay" | "gameover" | "leaderboard";
+type GameScreen = "home" | "gameplay" | "gameover" | "leaderboard" | "scoring";
 
 /**
  * Show a specific screen and hide all others
@@ -71,6 +92,7 @@ function showScreen(screen: GameScreen) {
     "gameplay-screen",
     "gameover-screen",
     "leaderboard-screen",
+    "scoring-screen",
   ];
 
   screens.forEach((id) => {
@@ -82,6 +104,10 @@ function showScreen(screen: GameScreen) {
   if (screen === "leaderboard") {
     fetchLeaderboard();
   }
+
+  if (screen === "home" && isAdminUser) {
+    void loadAdminAnalytics();
+  }
 }
 
 // ============================================================================
@@ -89,6 +115,9 @@ function showScreen(screen: GameScreen) {
 // ============================================================================
 
 const WORD_TIME_LIMIT = 7; // seconds per word
+const COMPUTER_DELAY_MIN_MS = 600;
+const COMPUTER_DELAY_MAX_MS = 1400;
+const KEYBOARD_LAYOUT = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM⌫"];
 
 let timeRemaining = WORD_TIME_LIMIT;
 let timerInterval: NodeJS.Timeout | null = null;
@@ -96,6 +125,199 @@ let wordCount = 0;
 let usedWords: Set<string> = new Set(); // Track words to prevent repeats
 let lastWordLastLetter = ""; // Track the letter the next word must start with
 let isGameActive = false;
+let isComputerThinking = false;
+let gameSessionToken = 0;
+let isVirtualKeyboardMode = false;
+let virtualKeyboardButtons: HTMLButtonElement[] = [];
+let playerSubmittedWords: string[] = [];
+let lastAcceptedWord = "";
+let playerTurnStartedAt: number | null = null;
+let playerSubmitDurationsMs: number[] = [];
+let isAdminUser = false;
+
+function setAdminPanelVisibility(visible: boolean) {
+  const panel = document.getElementById("admin-panel");
+  if (!panel) return;
+
+  panel.hidden = !visible;
+  panel.classList.toggle("is-visible", visible);
+}
+
+function updateAdminPanelStatus(text: string) {
+  const status = document.getElementById("admin-panel-status");
+  if (status) {
+    status.textContent = text;
+  }
+}
+
+function formatAverageSubmitTime(ms: number): string {
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function renderAnalyticsSummary(summary: AnalyticsSummaryResponse) {
+  const gameOpens = document.getElementById("analytics-game-opens");
+  const playClicks = document.getElementById("analytics-play-clicks");
+  const repeatPlayers = document.getElementById("analytics-repeat-players");
+  const averageWords = document.getElementById("analytics-average-words");
+  const averageSubmit = document.getElementById("analytics-average-submit");
+  const topWords = document.getElementById("analytics-top-words");
+
+  if (gameOpens) gameOpens.textContent = `${summary.gameOpens}`;
+  if (playClicks) playClicks.textContent = `${summary.playClicks}`;
+  if (repeatPlayers) repeatPlayers.textContent = `${summary.repeatPlayers}`;
+  if (averageWords) {
+    averageWords.textContent = summary.averageWordsPerPlayer.toFixed(1);
+  }
+  if (averageSubmit) {
+    averageSubmit.textContent = formatAverageSubmitTime(
+      summary.averageSubmitTimeMs,
+    );
+  }
+
+  if (topWords) {
+    if (summary.mostCommonWords.length === 0) {
+      topWords.textContent = "No data yet.";
+    } else {
+      topWords.textContent = summary.mostCommonWords
+        .map((entry) => `${entry.word} (${entry.count})`)
+        .join(" • ");
+    }
+  }
+
+  updateAdminPanelStatus("Metrics are for this post only.");
+}
+
+async function fetchAnalyticsSummary() {
+  const response = await fetch("/api/analytics/summary");
+  if (!response.ok) {
+    throw new Error(
+      `Failed to load analytics summary: HTTP ${response.status}`,
+    );
+  }
+
+  return (await response.json()) as AnalyticsSummaryResponse;
+}
+
+async function loadAdminAnalytics() {
+  if (!isAdminUser) return;
+
+  updateAdminPanelStatus("Loading analytics...");
+
+  try {
+    const summary = await fetchAnalyticsSummary();
+    renderAnalyticsSummary(summary);
+  } catch (error) {
+    console.warn("Failed to load analytics summary:", error);
+    updateAdminPanelStatus("Metrics unavailable right now.");
+  }
+}
+
+async function trackAnalyticsEvent(event: AnalyticsEventRequest["event"]) {
+  const payload: AnalyticsEventRequest = { event };
+
+  try {
+    await fetch("/api/analytics/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.warn("Failed to track analytics event:", error);
+  }
+}
+
+function getChainBonus(basePoints: number): number {
+  if (basePoints >= 10) return 2;
+  if (basePoints >= 5) return 1;
+  return 0;
+}
+
+function getLocalScoreBreakdown(basePoints: number): ScoreBreakdown {
+  const chainBonus = getChainBonus(basePoints);
+  return {
+    basePoints,
+    chainBonus,
+    rareWordBonus: 0,
+    totalPoints: basePoints + chainBonus,
+  };
+}
+
+function updateScoreBreakdownDisplay(breakdown: ScoreBreakdown) {
+  const baseEl = document.getElementById("breakdown-base");
+  const chainEl = document.getElementById("breakdown-chain");
+  const rareEl = document.getElementById("breakdown-rare");
+  const totalEl = document.getElementById("breakdown-total");
+
+  if (baseEl) baseEl.textContent = `${breakdown.basePoints}`;
+  if (chainEl) chainEl.textContent = `+${breakdown.chainBonus}`;
+  if (rareEl) rareEl.textContent = `+${breakdown.rareWordBonus}`;
+  if (totalEl) totalEl.textContent = `${breakdown.totalPoints}`;
+}
+
+function updateEndingWordDisplay(word: string) {
+  const endingWordEl = document.getElementById("ending-word");
+  if (endingWordEl) {
+    endingWordEl.textContent = word;
+  }
+}
+function resetGameOverFeedback() {
+  updateScoreBreakdownDisplay(getLocalScoreBreakdown(0));
+  updateEndingWordDisplay("-");
+}
+
+async function fetchEndRunScore(
+  playerWords: string[],
+  endingWord: string,
+): Promise<EndRunScoreResponse> {
+  const payload: EndRunScoreRequest = {
+    playerWords,
+    endingWord,
+    submitDurationsMs: [...playerSubmitDurationsMs],
+  };
+
+  const response = await fetch("/api/end-run-score", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to calculate end-run score: HTTP ${response.status}`,
+    );
+  }
+
+  return (await response.json()) as EndRunScoreResponse;
+}
+
+async function finalizeRunScore(
+  sessionToken: number,
+  playerWords: string[],
+  endingWord: string,
+) {
+  let breakdown = getLocalScoreBreakdown(playerWords.length);
+  let resolvedEndingWord = endingWord;
+
+  try {
+    const response = await fetchEndRunScore(playerWords, endingWord);
+    breakdown = response.breakdown;
+    resolvedEndingWord = response.endingWord || endingWord;
+  } catch (error) {
+    console.warn("Falling back to local end-run score:", error);
+  }
+
+  persistScore(breakdown.totalPoints).catch((err) => {
+    console.warn("Failed to persist score:", err);
+  });
+
+  if (sessionToken !== gameSessionToken) {
+    return;
+  }
+
+  updateScoreBreakdownDisplay(breakdown);
+  updateEndingWordDisplay(resolvedEndingWord);
+  updatePointsDisplay(breakdown.totalPoints);
+}
 
 /**
  * Get the last letter of a word
@@ -116,20 +338,8 @@ function validateWord(word: string): { valid: boolean; error: string | null } {
     return { valid: false, error: "Please enter a word" };
   }
 
-  // Check if it's the first word
-  if (wordCount === 0) {
-    // First word can start with anything, just check special rule
-    if (upperWord.endsWith(currentRuleLetter)) {
-      return {
-        valid: false,
-        error: `❌ No words ending in '${currentRuleLetter}' (today's rule!)`,
-      };
-    }
-    return { valid: true, error: null };
-  }
-
-  // Check if word starts with the required letter
-  if (!upperWord.startsWith(lastWordLastLetter)) {
+  // Check if word starts with the required letter when there is one
+  if (lastWordLastLetter && !upperWord.startsWith(lastWordLastLetter)) {
     return {
       valid: false,
       error: `❌ Must start with '${lastWordLastLetter}'`,
@@ -178,6 +388,220 @@ function showError(message: string) {
 
   // Show error in console or as visual feedback
   console.warn("Validation error:", message);
+}
+
+function setInputEnabled(enabled: boolean) {
+  const input = document.getElementById(
+    "word-input",
+  ) as HTMLInputElement | null;
+  const submitButton = document.getElementById(
+    "submit-word",
+  ) as HTMLButtonElement | null;
+
+  if (input) input.disabled = !enabled;
+  if (submitButton) submitButton.disabled = !enabled;
+  setVirtualKeyboardEnabled(enabled);
+}
+
+function isLikelyMobileDevice(): boolean {
+  return window.matchMedia("(max-width: 900px) and (pointer: coarse)").matches;
+}
+
+function setVirtualKeyboardEnabled(enabled: boolean) {
+  virtualKeyboardButtons.forEach((button) => {
+    button.disabled = !enabled;
+  });
+
+  const keyboard = document.getElementById("virtual-keyboard");
+  if (keyboard) {
+    keyboard.classList.toggle("is-disabled", !enabled);
+  }
+}
+
+function applyVirtualKeyboardMode() {
+  isVirtualKeyboardMode = isLikelyMobileDevice();
+
+  const keyboard = document.getElementById("virtual-keyboard");
+  const input = document.getElementById(
+    "word-input",
+  ) as HTMLInputElement | null;
+  if (keyboard) {
+    keyboard.classList.toggle("is-active", isVirtualKeyboardMode);
+  }
+
+  if (!input) return;
+
+  if (isVirtualKeyboardMode) {
+    input.readOnly = true;
+    input.setAttribute("inputmode", "none");
+    input.setAttribute("spellcheck", "false");
+  } else {
+    input.readOnly = false;
+    input.removeAttribute("inputmode");
+    input.removeAttribute("spellcheck");
+  }
+}
+
+function appendLetterToInput(letter: string) {
+  const input = document.getElementById(
+    "word-input",
+  ) as HTMLInputElement | null;
+  if (!input || input.disabled) return;
+
+  input.value = `${input.value}${letter}`;
+  input.classList.remove("input-error");
+}
+
+function deleteLastLetterFromInput() {
+  const input = document.getElementById(
+    "word-input",
+  ) as HTMLInputElement | null;
+  if (!input || input.disabled || input.value.length === 0) return;
+
+  input.value = input.value.slice(0, -1);
+  input.classList.remove("input-error");
+}
+
+function clearInputValue() {
+  const input = document.getElementById(
+    "word-input",
+  ) as HTMLInputElement | null;
+  if (!input || input.disabled || input.value.length === 0) return;
+
+  input.value = "";
+  input.classList.remove("input-error");
+}
+
+function createKeyButton(label: string, ariaLabel: string): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "keyboard-key";
+  button.textContent = label;
+  button.setAttribute("aria-label", ariaLabel);
+  return button;
+}
+
+function setupVirtualKeyboard() {
+  const keyboard = document.getElementById("virtual-keyboard");
+  if (!keyboard) return;
+
+  keyboard.innerHTML = "";
+  virtualKeyboardButtons = [];
+
+  const rowClasses = ["keyboard-row-10", "keyboard-row-9", "keyboard-row-8"];
+
+  KEYBOARD_LAYOUT.forEach((rowLetters, rowIndex) => {
+    const row = document.createElement("div");
+    row.className = `keyboard-row ${rowClasses[rowIndex]}`;
+
+    rowLetters.split("").forEach((letter) => {
+      const isBackspace = letter === "⌫";
+      const key = createKeyButton(
+        letter,
+        isBackspace ? "Delete last letter" : `Letter ${letter}`,
+      );
+
+      if (isBackspace) {
+        key.classList.add("keyboard-key-secondary");
+        key.addEventListener("click", () => {
+          deleteLastLetterFromInput();
+        });
+      } else {
+        key.addEventListener("click", () => {
+          appendLetterToInput(letter);
+        });
+      }
+
+      virtualKeyboardButtons.push(key);
+      row.appendChild(key);
+    });
+
+    keyboard.appendChild(row);
+  });
+
+  const actionRow = document.createElement("div");
+  actionRow.className = "keyboard-row keyboard-row-actions";
+
+  const clearKey = createKeyButton("CLEAR", "Clear current input");
+  clearKey.classList.add("keyboard-key-secondary");
+  clearKey.addEventListener("click", () => {
+    clearInputValue();
+  });
+
+  const submitKey = createKeyButton("SUBMIT", "Submit current word");
+  submitKey.classList.add("keyboard-key-action");
+  submitKey.addEventListener("click", () => {
+    void submitWord();
+  });
+
+  actionRow.appendChild(clearKey);
+  actionRow.appendChild(submitKey);
+  virtualKeyboardButtons.push(clearKey, submitKey);
+  keyboard.appendChild(actionRow);
+
+  applyVirtualKeyboardMode();
+}
+
+function updateNextLetterHint(requiredLetter: string) {
+  const nextLetterHint = document.getElementById("next-letter-hint");
+  if (nextLetterHint) {
+    nextLetterHint.textContent = `Next: ${requiredLetter}____`;
+  }
+}
+
+function showComputerThinking() {
+  const nextLetterHint = document.getElementById("next-letter-hint");
+  if (nextLetterHint) {
+    nextLetterHint.textContent = "Computer is thinking...";
+  }
+}
+
+function appendChainWord(
+  word: string,
+  source: "player" | "computer" | "start",
+) {
+  const wordChain = document.getElementById("word-chain");
+  if (!wordChain) return;
+
+  const chainWord = document.createElement("span");
+  chainWord.className = "chain-word";
+
+  if (source === "computer" || source === "start") {
+    chainWord.classList.add("chain-word-computer");
+    chainWord.textContent = `🤖 ${word}`;
+  } else {
+    chainWord.textContent = `✓ ${word}`;
+  }
+
+  wordChain.appendChild(chainWord);
+  wordChain.scrollLeft = wordChain.scrollWidth;
+}
+
+function getComputerDelayMs(): number {
+  const spread = COMPUTER_DELAY_MAX_MS - COMPUTER_DELAY_MIN_MS;
+  return COMPUTER_DELAY_MIN_MS + Math.floor(Math.random() * (spread + 1));
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function pickComputerWord(requiredLetter: string): string | null {
+  const upperLetter = requiredLetter.toUpperCase();
+  const candidates: string[] = [];
+
+  for (const candidate of validWords) {
+    if (!candidate.startsWith(upperLetter)) continue;
+    if (candidate.endsWith(currentRuleLetter)) continue;
+    if (usedWords.has(candidate)) continue;
+    candidates.push(candidate);
+  }
+
+  if (candidates.length === 0) return null;
+  const index = Math.floor(Math.random() * candidates.length);
+  return candidates[index] ?? null;
 }
 
 /**
@@ -241,13 +665,25 @@ function updateTimerDisplay() {
 function endGame(reason: string) {
   if (!isGameActive) return;
   isGameActive = false;
+  isComputerThinking = false;
+  playerTurnStartedAt = null;
+  gameSessionToken += 1;
+  const sessionToken = gameSessionToken;
   stopTimer();
+
+  const basePoints = playerSubmittedWords.length;
+  const endingWord = (
+    lastAcceptedWord ||
+    playerSubmittedWords[playerSubmittedWords.length - 1] ||
+    "N/A"
+  ).toUpperCase();
+  const optimisticBreakdown = getLocalScoreBreakdown(basePoints);
 
   // Update game over screen
   const finalWordCountElement = document.getElementById("final-word-count");
   if (finalWordCountElement) {
-    finalWordCountElement.textContent = `${wordCount} ${
-      wordCount === 1 ? "word" : "words"
+    finalWordCountElement.textContent = `${basePoints} ${
+      basePoints === 1 ? "word" : "words"
     }`;
   }
 
@@ -256,29 +692,27 @@ function endGame(reason: string) {
     gameoverReasonElement.innerHTML = `<span>${reason}</span>`;
   }
 
-  // Ensure points shown on game over
-  updatePointsDisplay();
+  updateEndingWordDisplay(endingWord);
+  updateScoreBreakdownDisplay(optimisticBreakdown);
 
-  // Persist the final score to the server (daily leaderboard)
-  persistScore(wordCount).catch((err) => {
-    console.warn("Failed to persist score:", err);
-  });
+  // Ensure points shown on game over
+  updatePointsDisplay(optimisticBreakdown.totalPoints);
 
   // Transition to game over screen
   showScreen("gameover");
 
-  const submitButton = document.getElementById(
-    "submit-word",
-  ) as HTMLButtonElement | null;
-  if (submitButton) submitButton.disabled = true;
+  setInputEnabled(false);
+
+  void finalizeRunScore(sessionToken, [...playerSubmittedWords], endingWord);
 }
 
 /**
  * Handle word submission
  */
-function submitWord() {
-  if (!isGameActive) return;
+async function submitWord() {
+  if (!isGameActive || isComputerThinking) return;
   const input = document.getElementById("word-input") as HTMLInputElement;
+  if (!input || input.disabled) return;
   const word = input?.value.trim();
 
   if (!word) return;
@@ -300,9 +734,16 @@ function submitWord() {
 
   // Add word to used words set
   usedWords.add(upperWord);
+  playerSubmittedWords.push(upperWord);
+  lastAcceptedWord = upperWord;
 
-  // Update last word's last letter for next validation
-  lastWordLastLetter = getLastLetter(upperWord);
+  if (playerTurnStartedAt !== null) {
+    playerSubmitDurationsMs.push(Math.max(0, Date.now() - playerTurnStartedAt));
+  }
+
+  const requiredComputerStart = getLastLetter(upperWord);
+  // During computer turn, this is the required start letter.
+  lastWordLastLetter = requiredComputerStart;
 
   // Increment word count (points)
   wordCount++;
@@ -310,19 +751,10 @@ function submitWord() {
   updatePointsDisplay();
 
   // Add to chain display
-  const wordChain = document.getElementById("word-chain");
-  if (wordChain) {
-    const chainWord = document.createElement("span");
-    chainWord.className = "chain-word";
-    chainWord.textContent = `✓ ${upperWord}`;
-    wordChain.appendChild(chainWord);
-  }
+  appendChainWord(upperWord, "player");
 
   // Clear input
   if (input) input.value = "";
-
-  // Restart timer for next word
-  startTimer();
 
   // Update current word display
   const currentWordDisplay = document.getElementById("current-word-display");
@@ -330,25 +762,55 @@ function submitWord() {
     currentWordDisplay.textContent = upperWord;
   }
 
-  // Update next letter hint
-  const nextLetterHint = document.getElementById("next-letter-hint");
-  if (nextLetterHint) {
-    nextLetterHint.textContent = `Next: ${lastWordLastLetter}____`;
+  // Computer turn starts: pause timer and lock inputs.
+  stopTimer();
+  isComputerThinking = true;
+  setInputEnabled(false);
+  showComputerThinking();
+
+  const activeSession = gameSessionToken;
+  await wait(getComputerDelayMs());
+
+  if (!isGameActive || activeSession !== gameSessionToken) {
+    return;
   }
 
-  // Focus back on input
-  if (input) input.focus();
+  const computerWord = pickComputerWord(requiredComputerStart);
+  if (!computerWord) {
+    isComputerThinking = false;
+    endGame("Computer is out of words. You win! 🎉");
+    return;
+  }
+
+  usedWords.add(computerWord);
+  lastWordLastLetter = getLastLetter(computerWord);
+  lastAcceptedWord = computerWord;
+
+  appendChainWord(computerWord, "computer");
+
+  if (currentWordDisplay) {
+    currentWordDisplay.textContent = computerWord;
+  }
+
+  updateNextLetterHint(lastWordLastLetter);
+  isComputerThinking = false;
+  setInputEnabled(true);
+  playerTurnStartedAt = Date.now();
+  if (!isVirtualKeyboardMode) {
+    input.focus();
+  }
+  startTimer();
 }
 
 /**
  * Update points display across all screens
  */
-function updatePointsDisplay() {
+function updatePointsDisplay(points = wordCount) {
   const pointsElements = document.querySelectorAll(
     "#player-points, #gameplay-points, #gameover-points",
   );
   pointsElements.forEach((el) => {
-    el.textContent = wordCount.toString();
+    el.textContent = points.toString();
   });
 }
 
@@ -381,7 +843,7 @@ async function fetchStartWord(): Promise<string> {
   return (data.word || "GAME").toUpperCase();
 }
 
-type LeaderboardEntry = { username: string; score: number };
+type LeaderboardEntry = LeaderboardResponse["entries"][number];
 
 async function fetchLeaderboard(top = 10) {
   const list = document.getElementById("leaderboard-list");
@@ -392,7 +854,7 @@ async function fetchLeaderboard(top = 10) {
   try {
     const resp = await fetch(`/api/leaderboard?top=${top}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = (await resp.json()) as { entries?: LeaderboardEntry[] };
+    const data = (await resp.json()) as LeaderboardResponse;
     // Ensure max 10 entries displayed
     renderLeaderboard((data.entries || []).slice(0, 10));
   } catch (err) {
@@ -433,7 +895,7 @@ function renderLeaderboard(entries: LeaderboardEntry[]) {
 
     const score = document.createElement("div");
     score.className = "player-score";
-    score.innerHTML = `${entry.score}<br /><span class=\"score-label\">words</span>`;
+    score.textContent = `${entry.score}`;
 
     item.appendChild(rank);
     item.appendChild(player);
@@ -447,13 +909,20 @@ function renderLeaderboard(entries: LeaderboardEntry[]) {
 // ============================================================================
 
 async function startGame() {
+  gameSessionToken += 1;
+  void trackAnalyticsEvent("play_click");
   await loadDailyRule();
   stopTimer();
   isGameActive = true;
+  isComputerThinking = false;
   wordCount = 0;
   timeRemaining = WORD_TIME_LIMIT;
   usedWords = new Set();
   lastWordLastLetter = "";
+  playerSubmittedWords = [];
+  lastAcceptedWord = "";
+  playerTurnStartedAt = null;
+  playerSubmitDurationsMs = [];
 
   const wordChainEl = document.getElementById("word-chain");
   if (wordChainEl) wordChainEl.innerHTML = "";
@@ -479,6 +948,7 @@ async function startGame() {
 
   usedWords.add(startWord);
   lastWordLastLetter = getLastLetter(startWord);
+  lastAcceptedWord = startWord;
 
   const currentWordDisplay = document.getElementById("current-word-display");
   if (currentWordDisplay) {
@@ -486,23 +956,18 @@ async function startGame() {
   }
 
   const nextLetterHint = document.getElementById("next-letter-hint");
-  if (nextLetterHint) {
-    nextLetterHint.textContent = `Next: ${lastWordLastLetter}____`;
-  }
+  if (nextLetterHint) updateNextLetterHint(lastWordLastLetter);
 
-  if (wordChainEl) {
-    const chainWord = document.createElement("span");
-    chainWord.className = "chain-word";
-    chainWord.textContent = `✓ ${startWord}`;
-    wordChainEl.appendChild(chainWord);
-  }
+  appendChainWord(startWord, "start");
+  resetGameOverFeedback();
 
   updatePointsDisplay();
   showScreen("gameplay");
-  const submitButton = document.getElementById(
-    "submit-word",
-  ) as HTMLButtonElement | null;
-  if (submitButton) submitButton.disabled = false;
+  setInputEnabled(true);
+  playerTurnStartedAt = Date.now();
+  if (!isVirtualKeyboardMode) {
+    wordInput?.focus();
+  }
   startTimer();
 }
 
@@ -533,10 +998,20 @@ function setupEventListeners() {
     showScreen("leaderboard");
   });
 
-  // Leaderboard Screen
-  const playNowButton = document.querySelector(".play-now-btn");
-  playNowButton?.addEventListener("click", () => {
-    void startGame();
+  const scoringButton = document.getElementById("scoring-btn");
+  scoringButton?.addEventListener("click", () => {
+    stopTimer();
+    showScreen("scoring");
+  });
+
+  // Leaderboard and scoring screens
+  const playNowButtons = document.querySelectorAll(
+    ".play-now-btn",
+  ) as NodeListOf<HTMLButtonElement>;
+  playNowButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      void startGame();
+    });
   });
 
   const homeButtons = document.querySelectorAll(
@@ -569,11 +1044,20 @@ function setupEventListeners() {
 
   // Allow Enter key to submit word
   const wordInput = document.getElementById("word-input") as HTMLInputElement;
+  wordInput?.addEventListener("focus", () => {
+    if (isVirtualKeyboardMode) {
+      wordInput.blur();
+    }
+  });
   wordInput?.addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
       void submitWord();
     }
   });
+
+  setupVirtualKeyboard();
+  applyVirtualKeyboardMode();
+  window.addEventListener("resize", applyVirtualKeyboardMode);
 }
 
 // ============================================================================
@@ -592,6 +1076,12 @@ async function initializeGame() {
     const data = (await response.json()) as InitResponse;
     if (data.type === "init") {
       await loadDailyRule();
+      isAdminUser = isAdminUsername(data.username);
+      setAdminPanelVisibility(isAdminUser);
+      if (isAdminUser) {
+        updateAdminPanelStatus("Loading analytics...");
+      }
+
       // Update player info across all screens
       const playerNameElements = document.querySelectorAll(
         "#player-username, #gameplay-username, #gameover-username",

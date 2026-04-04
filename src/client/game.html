@@ -58,6 +58,54 @@
           </p>
         </div>
 
+        <section class="admin-panel" id="admin-panel" hidden>
+          <div class="admin-panel-header">
+            <h3 class="admin-panel-title">POST METRICS</h3>
+            <span class="admin-panel-badge">Admin Only</span>
+          </div>
+          <p class="admin-panel-status" id="admin-panel-status">
+            Loading analytics...
+          </p>
+          <div class="admin-metrics-grid">
+            <div class="admin-metric-card">
+              <span class="admin-metric-label">Game opens</span>
+              <span class="admin-metric-value" id="analytics-game-opens"
+                >0</span
+              >
+            </div>
+            <div class="admin-metric-card">
+              <span class="admin-metric-label">Play clicks</span>
+              <span class="admin-metric-value" id="analytics-play-clicks"
+                >0</span
+              >
+            </div>
+            <div class="admin-metric-card">
+              <span class="admin-metric-label">Played 2+ times</span>
+              <span class="admin-metric-value" id="analytics-repeat-players"
+                >0</span
+              >
+            </div>
+            <div class="admin-metric-card">
+              <span class="admin-metric-label">Avg words / player</span>
+              <span class="admin-metric-value" id="analytics-average-words"
+                >0.0</span
+              >
+            </div>
+            <div class="admin-metric-card admin-metric-card-wide">
+              <span class="admin-metric-label">Avg submit time</span>
+              <span class="admin-metric-value" id="analytics-average-submit"
+                >0.0s</span
+              >
+            </div>
+          </div>
+          <div class="admin-word-section">
+            <span class="admin-metric-label">Most common submitted words</span>
+            <div class="admin-word-list" id="analytics-top-words">
+              No data yet.
+            </div>
+          </div>
+        </section>
+
         <!-- Start Game Button -->
         <button class="start-game-btn" id="start-game">Tap to Start</button>
         <!-- Start Game Button -->
@@ -65,10 +113,12 @@
           View Leaderboard &gt;
         </button>
 
+        <button class="btn-leaderboard-go" id="scoring-btn">
+          Scoring System &gt;
+        </button>
+
         <!-- Footer text -->
-        <p class="home-footer-text">
-          Play unlimited times • No signup required
-        </p>
+        <p class="home-footer-text">Play unlimited times</p>
       </div>
     </div>
 
@@ -134,7 +184,12 @@
             />
             <div class="timer timer-side" id="game-timer-bottom">7s</div>
           </div>
-          <button class="submit-btn" id="submit-word">Submit Word</button>
+          <!-- <button class="submit-btn" id="submit-word">Submit Word</button> -->
+          <div
+            class="virtual-keyboard"
+            id="virtual-keyboard"
+            aria-label="In-game keyboard"
+          ></div>
         </div>
       </div>
     </div>
@@ -174,9 +229,32 @@
           <h2 class="gameover-title">Game Over!</h2>
           <div class="word-count" id="final-word-count">1 words</div>
 
-          <!-- <div class="gameover-reason" id="gameover-reason">
+          <div class="gameover-reason" id="gameover-reason">
             <span>Time ran out! ⏰</span>
-          </div> -->
+          </div>
+
+          <div class="score-breakdown" id="score-breakdown">
+            <div class="breakdown-row">
+              <span class="breakdown-label">Base points</span>
+              <span id="breakdown-base">0</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="breakdown-label">Chain bonus</span>
+              <span id="breakdown-chain">+0</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="breakdown-label">Rare word bonus</span>
+              <span id="breakdown-rare">+0</span>
+            </div>
+            <div class="breakdown-row breakdown-total">
+              <span class="breakdown-label">Total points</span>
+              <span id="breakdown-total">0</span>
+            </div>
+          </div>
+
+          <div class="ending-word" id="ending-word-display">
+            Word that ended your run: <strong id="ending-word">-</strong>
+          </div>
 
           <div class="gameover-buttons">
             <button class="btn btn-play-again" id="play-again-btn">
@@ -191,6 +269,49 @@
             </button> -->
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- SCORING SCREEN -->
+    <div id="scoring-screen" style="display: none">
+      <div class="leaderboard-content scoring-content">
+        <h1 class="leaderboard-title">Scoring System</h1>
+
+        <div class="scoring-card">
+          <div class="scoring-section">
+            <h3 class="scoring-title">Base Points</h3>
+            <p class="scoring-copy">+1 point for every word you submit.</p>
+          </div>
+
+          <div class="scoring-section">
+            <h3 class="scoring-title">Chain Bonus</h3>
+            <p class="scoring-copy">
+              +1 point when your submitted-word chain reaches 5 words.
+            </p>
+            <p class="scoring-copy">
+              +2 points total when your submitted-word chain reaches 10 words.
+            </p>
+          </div>
+
+          <div class="scoring-section">
+            <h3 class="scoring-title">Rare Word Bonus</h3>
+            <p class="scoring-copy">
+              +1 point for each word you submit that has been used fewer than 3
+              times today across all players.
+            </p>
+          </div>
+
+          <div class="scoring-section">
+            <h3 class="scoring-title">Total Score</h3>
+            <p class="scoring-copy">
+              Your leaderboard score is base points + chain bonus + rare word
+              bonuses.
+            </p>
+          </div>
+        </div>
+
+        <button class="start-game-btn play-now-btn">Play Now</button>
+        <button class="btn btn-secondary home-btn">Home</button>
       </div>
     </div>
 
