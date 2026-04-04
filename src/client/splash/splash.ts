@@ -11,29 +11,9 @@ const discordLink = document.getElementById(
 const startButton = document.getElementById(
   "start-button",
 ) as HTMLButtonElement;
-const leaderboardButton = document.getElementById(
-  "leaderboard-button",
-) as HTMLButtonElement | null;
 
 startButton?.addEventListener("click", (e) => {
   // Open game directly (start playing)
-  requestExpandedMode(e, "game");
-});
-
-leaderboardButton?.addEventListener("click", (e) => {
-  // Request the expanded game view and signal it to open the leaderboard
-  try {
-    sessionStorage.setItem("lw_nextScreen", "leaderboard");
-  } catch (err) {
-    // ignore storage errors
-    console.warn("Could not set sessionStorage for nextScreen", err);
-  }
-  try {
-    localStorage.setItem("lw_nextScreen", "leaderboard");
-  } catch (err) {
-    // ignore storage errors
-    console.warn("Could not set localStorage for nextScreen", err);
-  }
   requestExpandedMode(e, "game");
 });
 
@@ -52,28 +32,27 @@ discordLink?.addEventListener("click", () => {
 const titleElement = document.getElementById("title") as HTMLHeadingElement;
 
 function updatePostNumberLabel(postNumber?: number, ruleLetter?: string) {
-  const label = document.getElementById("post-number-label");
-  if (!label) return;
+  const stack = document.getElementById("post-rule-stack");
+  const postLabel = document.getElementById("post-number-label");
+  const ruleLabel = document.getElementById("post-rule-label");
+  if (!stack || !postLabel || !ruleLabel) return;
 
-  if (
-    typeof postNumber === "number" &&
-    postNumber > 0 &&
-    typeof ruleLetter === "string" &&
-    ruleLetter.trim().length > 0
-  ) {
-    label.textContent = `Post ${postNumber}: No words ending in ${ruleLetter.toUpperCase()}`;
-    label.hidden = false;
+  const hasPost = typeof postNumber === "number" && postNumber > 0;
+  const hasRule =
+    typeof ruleLetter === "string" && ruleLetter.trim().length > 0;
+
+  if (!hasPost && !hasRule) {
+    postLabel.textContent = "";
+    ruleLabel.textContent = "";
+    stack.hidden = true;
     return;
   }
 
-  if (typeof postNumber === "number" && postNumber > 0) {
-    label.textContent = `Post ${postNumber}`;
-    label.hidden = false;
-    return;
-  }
-
-  label.textContent = "";
-  label.hidden = true;
+  postLabel.textContent = hasPost ? `POST ${postNumber}` : "";
+  ruleLabel.textContent = hasRule
+    ? `No words ending in ${ruleLetter.toUpperCase()}`
+    : "";
+  stack.hidden = false;
 }
 
 function formatUsername(name: string | null | undefined): string {

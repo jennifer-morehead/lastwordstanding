@@ -83,7 +83,7 @@ body {
 
 .splash-header {
   color: white;
-  margin-top: 40px;
+  margin-top: 20px;
   padding: 16px 24px 0px;
   text-align: center;
 }
@@ -94,8 +94,8 @@ body {
 }
 
 .splash-logo {
-  transform: translateX(16px);
-  max-width: 60%; /* responsive on small screens */
+  width: min(360px, 72vw);
+  max-width: 100%;
 }
 
 .splash-title {
@@ -106,11 +106,15 @@ body {
 }
 
 .splash-subtitle {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-  font-weight: 600;
+  color: #ff6b35;
+  font-size: 16px;
+  font-weight: 700;
   text-transform: uppercase;
-  padding: 16px;
+  text-align: center;
+  letter-spacing: 0.1em;
+  line-height: 1.1;
+  width: min(360px, 72vw);
+  padding: 0;
 }
 
 .splash-body {
@@ -118,23 +122,28 @@ body {
   flex: 1;
   width: 100%;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   align-items: center;
-  padding: 0 40px 24px;
-}
-
-.splash-subtitle {
-  margin-top: auto;
+  padding: 0 32px 24px;
 }
 
 .start-button {
-  margin-top: 8px;
+  margin-top: auto;
+}
+
+.post-rule-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 44px;
+  margin-top: 26px;
+  margin-bottom: auto;
 }
 
 .top-players-preview {
   width: min(360px, 100%);
-  margin-top: auto;
-  margin-bottom: 10vh;
+  margin-bottom: 4vh;
 }
 
 .top-players-list {
@@ -150,19 +159,21 @@ body {
 
 @media (max-width: 900px) {
   .splash-header {
-    margin-top: 24px;
+    margin-top: 12px;
   }
 
   .splash-logo {
-    max-width: 70%;
+    width: min(320px, 78vw);
   }
 
   .splash-body {
-    padding: 0 32px 20px;
+    padding: 0 24px 16px;
   }
 
   .splash-subtitle {
-    padding: 12px;
+    width: min(320px, 78vw);
+    font-size: 13px;
+    letter-spacing: 0.08em;
   }
 
   .start-button {
@@ -170,10 +181,22 @@ body {
     padding: 8px 40px;
   }
 
+  .post-rule-stack {
+    margin-top: 22px;
+  }
+
+  .post-number-label {
+    font-size: 13px;
+  }
+
+  .post-rule-label {
+    font-size: 16px;
+  }
+
   .top-players-preview {
     width: 100%;
     max-width: 340px;
-    margin-bottom: 8vh;
+    margin-bottom: 2vh;
   }
 }
 
@@ -282,11 +305,20 @@ body {
 }
 
 .post-number-label {
-  margin-top: 6px;
   text-align: center;
   color: white;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.post-rule-label {
+  text-align: center;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.1;
 }
 
 .footer {
