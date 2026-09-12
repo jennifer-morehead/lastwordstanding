@@ -1,0 +1,100 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2818
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11820\viewh10040\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li735\fi25\pardirnatural\partightenfactor0
+\cf0 # Last Word Standing \'97 Dev Workflow\
+\
+## LINKS\
+\
+Production:\
+https://www.reddit.com/r/lastwordstanding/\
+\
+Development:\
+https://www.reddit.com/r/lastwordstanding_dev/\
+\
+Playtest:\
+https://www.reddit.com/r/lastwordstanding_dev/?playtest=lastwordstanding\
+\
+Versions / Review:\
+https://developers.reddit.com/apps/lastwordstanding/app-versions\
+\
+\
+# DEVELOP\
+\
+Open project in VS Code.\
+\
+Run:\
+\
+npm run dev\
+\
+Then open the Playtest URL above.\
+\
+Leave `npm run dev` running while working.\
+Saving files automatically rebuilds/updates Playtest.\
+\
+When finished:\
+\
+Ctrl+C\
+\
+\
+# COMING BACK AFTER A LONG BREAK\
+\
+Check Devvit:\
+\
+npx devvit --version\
+\
+If Devvit is outdated:\
+\
+npm install --save-dev devvit@latest\
+npx devvit update app\
+\
+Then:\
+\
+npm run dev\
+\
+IMPORTANT: Make sure the existing game works before changing anything.\
+\
+\
+# RELEASE\
+\
+1. Test everything in Playtest.\
+\
+2. Stop development:\
+   Ctrl+C\
+\
+3. Confirm Reddit account:\
+   npx devvit whoami\
+\
+4. Submit new version for review:\
+   npx devvit publish\
+\
+5. Check review status:\
+   https://developers.reddit.com/apps/lastwordstanding/app-versions\
+\
+6. Once APPROVED, update production:\
+   npx devvit install lastwordstanding\
+\
+7. Open r/lastwordstanding and verify the new version works.\
+\
+\
+# REMEMBER\
+\
+npm run dev\
+= develop + Playtest\
+\
+npx devvit publish\
+= submit a new version for Reddit review\
+\
+npx devvit install lastwordstanding\
+= put latest approved version on production\
+\
+0.1.7.xxx\
+= Playtest\
+\
+0.1.8\
+= released version}
