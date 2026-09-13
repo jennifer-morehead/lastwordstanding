@@ -17,6 +17,15 @@ export type LeaderboardResponse = {
   entries: LeaderboardEntry[];
 };
 
+export type SubmitScoreResponse = {
+  status: "ok";
+  updated: boolean;
+  previousBest: number | null;
+  isPersonalBest: boolean;
+  runRank: number | null;
+  pointsToTopTen: number | null;
+};
+
 export type AnalyticsEventType = "play_click";
 
 export type AnalyticsEventRequest = {
