@@ -11,111 +11,109 @@
   </head>
 
   <body class="app">
+    <header class="app-header" id="app-header">
+      <button class="app-header-nav" id="app-header-nav" type="button" hidden>
+        <span id="app-header-nav-icon" aria-hidden="true">←</span>
+        <span id="app-header-nav-label">Back</span>
+      </button>
+      <div class="app-brand" aria-label="Last Word Standing">
+        <span class="app-brand-mark" aria-hidden="true">⚡</span>
+        <span class="app-brand-name">Last Word Standing</span>
+      </div>
+      <div class="app-score" aria-label="Current score">
+        <span class="app-score-value" id="shared-points">0</span>
+        <span class="app-score-label">points</span>
+      </div>
+    </header>
+
     <!-- HOME SCREEN -->
     <div id="home-screen" style="display: none">
-      <!-- Header with branding and user info -->
-      <div class="header-section home-header">
-        <div class="header-content">
-          <div class="title-row home-title-row">
-            <h1 class="game-title">⚡ Last Word Standing</h1>
-          </div>
-          <div class="meta-row">
-            <div class="user-attempt">
-              <div class="username">
-                <span id="player-username">u/player123</span>
-              </div>
-            </div>
-            <div class="points-display">
-              <span class="points-number" id="player-points">0</span>
-              <span class="points-label">points</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Main content -->
       <div class="home-content">
         <!-- How to Play Section -->
         <div class="rules-section">
-          <h3 class="section-title">HOW TO PLAY</h3>
-          <ul class="rules-list">
-            <li>
-              <span class="checkmark">✓</span> Start with the last letter of the
-              previous word
-            </li>
-            <li>
-              <span class="checkmark">✓</span> No repeating words in your chain
-            </li>
-            <li><span class="checkmark">✓</span> 7 seconds per word</li>
-          </ul>
+          <h3 class="section-title">How to play</h3>
+          <div class="mechanic-example" aria-label="Flame connects to egg through the letter E">
+            <div class="mechanic-player">
+              <span class="mechanic-owner">Computer</span>
+              <span class="mechanic-word">FLAM<strong>E</strong></span>
+            </div>
+            <span class="mechanic-arrow" aria-hidden="true">→</span>
+            <div class="mechanic-player">
+              <span class="mechanic-owner">You</span>
+              <span class="mechanic-word"><strong>E</strong>GG</span>
+            </div>
+          </div>
         </div>
 
         <!-- Today's Special Rule -->
         <div class="special-rule-section">
-          <h3 class="special-rule-title">⭐ TODAY'S SPECIAL RULE</h3>
+          <h3 class="special-rule-title">TODAY'S RULE</h3>
           <p class="special-rule-text" id="daily-rule-text">
-            🔶 No words ending in 'S'
+            No words ending in 'S'
           </p>
         </div>
 
-        <section class="admin-panel" id="admin-panel" hidden>
-          <div class="admin-panel-header">
-            <h3 class="admin-panel-title">POST METRICS</h3>
-            <span class="admin-panel-badge">Admin Only</span>
-          </div>
-          <p class="admin-panel-status" id="admin-panel-status">
-            Loading analytics...
-          </p>
-          <div class="admin-metrics-grid">
-            <div class="admin-metric-card">
-              <span class="admin-metric-label">Game opens</span>
-              <span class="admin-metric-value" id="analytics-game-opens"
-                >0</span
-              >
-            </div>
-            <div class="admin-metric-card">
-              <span class="admin-metric-label">Play clicks</span>
-              <span class="admin-metric-value" id="analytics-play-clicks"
-                >0</span
-              >
-            </div>
-            <div class="admin-metric-card">
-              <span class="admin-metric-label">Played 2+ times</span>
-              <span class="admin-metric-value" id="analytics-repeat-players"
-                >0</span
-              >
-            </div>
-            <div class="admin-metric-card">
-              <span class="admin-metric-label">Avg words / player</span>
-              <span class="admin-metric-value" id="analytics-average-words"
-                >0.0</span
-              >
-            </div>
-            <div class="admin-metric-card admin-metric-card-wide">
-              <span class="admin-metric-label">Avg submit time</span>
-              <span class="admin-metric-value" id="analytics-average-submit"
-                >0.0s</span
-              >
-            </div>
-          </div>
-          <div class="admin-word-section">
-            <span class="admin-metric-label">Most common submitted words</span>
-            <div class="admin-word-list" id="analytics-top-words">
-              No data yet.
-            </div>
-          </div>
-        </section>
-
-        <!-- Start Game Button -->
         <button class="start-game-btn" id="start-game">Tap to Start</button>
-        <!-- Start Game Button -->
-        <button class="btn-leaderboard-go" id="leaderboard-btn">
-          View Leaderboard &gt;
-        </button>
 
-        <button class="btn-leaderboard-go" id="scoring-btn">
-          Scoring System &gt;
-        </button>
+        <div class="home-constraints">
+          <ul class="rules-list" aria-label="Additional rules">
+            <li>No repeats</li>
+            <li>7 seconds to answer</li>
+          </ul>
+        </div>
+
+        <nav class="home-secondary-actions" aria-label="Game information">
+          <button class="home-leaderboard-btn" id="leaderboard-btn">
+            Leaderboard <span aria-hidden="true">›</span>
+          </button>
+          <button class="home-scoring-link" id="scoring-btn">
+            Scoring <span aria-hidden="true">›</span>
+          </button>
+        </nav>
+
+        <details class="admin-panel" id="admin-panel" hidden>
+          <summary class="admin-panel-header">
+            <h3 class="admin-panel-title">POST METRICS</h3>
+            <span class="admin-panel-summary-action">View Post Metrics</span>
+          </summary>
+          <div class="admin-panel-body">
+            <div class="admin-panel-context">
+              <span class="admin-panel-badge">Admin Only</span>
+              <p class="admin-panel-status" id="admin-panel-status">
+                Loading analytics...
+              </p>
+            </div>
+            <div class="admin-metrics-grid">
+              <div class="admin-metric-card">
+                <span class="admin-metric-label">Game opens</span>
+                <span class="admin-metric-value" id="analytics-game-opens">0</span>
+              </div>
+              <div class="admin-metric-card">
+                <span class="admin-metric-label">Play clicks</span>
+                <span class="admin-metric-value" id="analytics-play-clicks">0</span>
+              </div>
+              <div class="admin-metric-card">
+                <span class="admin-metric-label">Played 2+ times</span>
+                <span class="admin-metric-value" id="analytics-repeat-players">0</span>
+              </div>
+              <div class="admin-metric-card">
+                <span class="admin-metric-label">Avg words / player</span>
+                <span class="admin-metric-value" id="analytics-average-words">0.0</span>
+              </div>
+              <div class="admin-metric-card admin-metric-card-wide">
+                <span class="admin-metric-label">Avg submit time</span>
+                <span class="admin-metric-value" id="analytics-average-submit">0.0s</span>
+              </div>
+            </div>
+            <div class="admin-word-section">
+              <span class="admin-metric-label">Most common submitted words</span>
+              <div class="admin-word-list" id="analytics-top-words">
+                No data yet.
+              </div>
+            </div>
+          </div>
+        </details>
 
         <!-- Footer text -->
         <p class="home-footer-text">Play unlimited times</p>
@@ -124,45 +122,8 @@
 
     <!-- GAMEPLAY SCREEN -->
     <div id="gameplay-screen" style="display: none">
-      <!-- Header with branding and user info -->
-      <div class="header-section">
-        <!-- <div class="header-top">
-          <div class="header-left">
-            <span class="back-arrow">← Home</span>
-          </div>
-          <div class="header-right"></div>
-        </div> -->
-
-        <div class="header-content">
-          <div class="title-row">
-            <h1 class="game-title">⚡ Last Word Standing</h1>
-          </div>
-          <div class="meta-row">
-            <div class="user-attempt">
-              <div class="username">
-                <span id="gameplay-username">u/player123</span>
-              </div>
-            </div>
-            <div class="points-display">
-              <span class="points-number" id="gameplay-points">0</span>
-              <span class="points-label">points</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Game Content -->
       <div class="gameplay-content">
-        <!-- Current Word Section -->
-        <div class="current-word-section">
-          <div class="current-word-header">
-            <span class="current-word-label">CURRENT WORD</span>
-            <span class="timer" id="game-timer">7s</span>
-          </div>
-          <div class="word-display" id="current-word-display">GAME</div>
-          <div class="next-letter-hint" id="next-letter-hint">Next: E____</div>
-        </div>
-
         <!-- Your Chain Section -->
         <div class="chain-section">
           <span class="chain-label">YOUR CHAIN</span>
@@ -172,66 +133,65 @@
           </div>
         </div>
 
-        <!-- Input and Submit -->
-        <div class="input-section">
-          <div class="input-row">
-            <input
-              type="text"
-              class="word-input"
-              id="word-input"
-              placeholder="Enter your word..."
-              autocomplete="off"
-            />
-            <div class="timer timer-side" id="game-timer-bottom">7s</div>
+        <div class="gameplay-action">
+          <!-- Current Word Section -->
+          <div class="current-word-section">
+            <div class="current-word-header">
+              <span class="current-word-label">WORD TO BEAT</span>
+            </div>
+            <div class="word-display" id="current-word-display" aria-label="Current word: GAME">
+              <span class="current-word-stem">GAM</span><span class="handoff-letter">E</span>
+            </div>
           </div>
-          <!-- <button class="submit-btn" id="submit-word">Submit Word</button> -->
-          <div
-            class="virtual-keyboard"
-            id="virtual-keyboard"
-            aria-label="In-game keyboard"
-          ></div>
+
+          <!-- Input and Submit -->
+          <div class="input-section">
+            <div class="turn-status" id="turn-status" role="status" aria-live="polite">
+              Your turn - build from <strong id="required-letter-copy">E</strong>
+            </div>
+            <div class="input-row">
+              <label class="word-input-shell" for="word-input">
+                <input
+                  type="text"
+                  class="word-input"
+                  id="word-input"
+                  placeholder="Enter your word..."
+                  aria-label="Enter a word beginning with E"
+                  autocomplete="off"
+                />
+              </label>
+              <div class="timer timer-side" id="game-timer-bottom">7s</div>
+            </div>
+            <div
+              class="virtual-keyboard"
+              id="virtual-keyboard"
+              aria-label="In-game keyboard"
+            ></div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- GAME OVER SCREEN -->
     <div id="gameover-screen" style="display: none">
-      <!-- Header with branding and user info -->
-      <div class="header-section">
-        <!-- <div class="header-top">
-          <div class="header-left">
-            <span class="back-arrow">← Home</span>
-          </div>
-          <div class="header-right"></div>
-        </div> -->
-
-        <div class="header-content">
-          <div class="title-row">
-            <h1 class="game-title">⚡ Last Word Standing</h1>
-          </div>
-          <div class="meta-row">
-            <div class="user-attempt">
-              <div class="username">
-                <span id="gameover-username">u/player123</span>
-              </div>
-            </div>
-            <div class="points-display">
-              <span class="points-number" id="gameover-points">0</span>
-              <span class="points-label">points</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Game Over Content -->
       <div class="gameover-content">
         <div class="gameover-card">
-          <h2 class="gameover-title">Game Over!</h2>
-          <div class="word-count" id="final-word-count">1 words</div>
+          <p class="gameover-eyebrow">RUN COMPLETE</p>
+          <h2 class="gameover-title">Game Over</h2>
 
-          <div class="gameover-reason" id="gameover-reason">
-            <span>Time ran out! ⏰</span>
+          <div class="final-score" aria-label="Final score">
+            <span class="final-score-number" id="breakdown-total">0</span>
+            <span class="final-score-label">points</span>
           </div>
+
+          <div class="word-count" id="final-word-count">1 word completed</div>
+
+          <div
+            class="gameover-message"
+            id="gameover-message"
+            aria-live="polite"
+          ></div>
 
           <div class="score-breakdown" id="score-breakdown">
             <div class="breakdown-row">
@@ -246,14 +206,10 @@
               <span class="breakdown-label">Rare word bonus</span>
               <span id="breakdown-rare">+0</span>
             </div>
-            <div class="breakdown-row breakdown-total">
-              <span class="breakdown-label">Total points</span>
-              <span id="breakdown-total">0</span>
-            </div>
           </div>
 
           <div class="ending-word" id="ending-word-display">
-            Word that ended your run: <strong id="ending-word">-</strong>
+            Final word: <strong id="ending-word">-</strong>
           </div>
 
           <div class="gameover-buttons">
@@ -278,7 +234,7 @@
         <h1 class="leaderboard-title">Scoring System</h1>
 
         <div class="scoring-card">
-          <div class="scoring-section">
+          <div class="scoring-section scoring-total">
             <h3 class="scoring-title">Base Points</h3>
             <p class="scoring-copy">+1 point for every word you submit.</p>
           </div>
@@ -311,7 +267,6 @@
         </div>
 
         <button class="start-game-btn play-now-btn">Play Now</button>
-        <button class="btn btn-secondary home-btn">Home</button>
       </div>
     </div>
 
@@ -329,9 +284,32 @@
 
         <!-- Call to Action -->
         <button class="start-game-btn play-now-btn">Play Now</button>
-        <button class="btn btn-secondary home-btn">Home</button>
         <p class="leaderboard-update-text">Leaderboard updates in real-time</p>
       </div>
+    </div>
+
+    <div class="exit-confirmation" id="exit-confirmation" hidden>
+      <div class="exit-confirmation-backdrop" data-exit-dismiss></div>
+      <section
+        class="exit-confirmation-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="exit-confirmation-title"
+        aria-describedby="exit-confirmation-copy"
+      >
+        <h2 id="exit-confirmation-title">End this run?</h2>
+        <p id="exit-confirmation-copy">
+          Your current run won't be added to the leaderboard.
+        </p>
+        <div class="exit-confirmation-actions">
+          <button class="btn btn-play-again" id="keep-playing-btn" type="button">
+            Keep Playing
+          </button>
+          <button class="btn btn-secondary" id="end-run-btn" type="button">
+            End Run
+          </button>
+        </div>
+      </section>
     </div>
 
     <script type="module" src="game/game.ts" defer></script>

@@ -31,24 +31,23 @@ discordLink?.addEventListener("click", () => {
 
 const titleElement = document.getElementById("title") as HTMLHeadingElement;
 
-function updatePostNumberLabel(postNumber?: number, ruleLetter?: string) {
+function updatePostNumberLabel(_postNumber?: number, ruleLetter?: string) {
   const stack = document.getElementById("post-rule-stack");
   const postLabel = document.getElementById("post-number-label");
   const ruleLabel = document.getElementById("post-rule-label");
   if (!stack || !postLabel || !ruleLabel) return;
 
-  const hasPost = typeof postNumber === "number" && postNumber > 0;
   const hasRule =
     typeof ruleLetter === "string" && ruleLetter.trim().length > 0;
 
-  if (!hasPost && !hasRule) {
+  if (!hasRule) {
     postLabel.textContent = "";
     ruleLabel.textContent = "";
     stack.hidden = true;
     return;
   }
 
-  postLabel.textContent = hasPost ? `POST ${postNumber}` : "";
+  postLabel.textContent = "TODAY’S RULE ·";
   ruleLabel.textContent = hasRule
     ? `No words ending in ${ruleLetter.toUpperCase()}`
     : "";
@@ -85,8 +84,10 @@ async function fetchTopPlayers(top = 3) {
   } catch (err) {
     const container = document.getElementById("top-players");
     updatePostNumberLabel();
-    if (container)
-      container.innerHTML = `<div class="top-player-placeholder">Failed to load leaderboard</div>`;
+    if (container) {
+      container.className = "top-players-list is-error";
+      container.innerHTML = `<div class="top-player-placeholder">Leaderboard unavailable</div>`;
+    }
     console.warn("Failed to load leaderboard:", err);
   }
 }
@@ -95,10 +96,12 @@ function renderTopPlayers(entries: Array<{ username: string; score: number }>) {
   const container = document.getElementById("top-players");
   if (!container) return;
   if (!entries || entries.length === 0) {
-    container.innerHTML = `<div class="top-player-placeholder">No entries yet — be the first!</div>`;
+    container.className = "top-players-list is-empty";
+    container.innerHTML = `<div class="top-player-placeholder">No scores yet. Play first.</div>`;
     return;
   }
 
+  container.className = "top-players-list has-entries";
   container.innerHTML = "";
   entries.slice(0, 3).forEach((entry, idx) => {
     const item = document.createElement("div");

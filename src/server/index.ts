@@ -848,15 +848,54 @@ router.post("/api/submit-score", async (req, res): Promise<void> => {
 
     // Only update if this score is greater than existing score for this user
     const existing = await redis.zScore(leaderboardKey, username);
-    if (existing != null && existing >= score) {
-      res.json({ status: "ok", updated: false });
-      return;
+    const previousBest = existing == null ? null : Number(existing);
+    const isPersonalBest = previousBest !== null && score > previousBest;
+    const updated = previousBest === null || score > previousBest;
+
+    if (updated) {
+      await redis.zAdd(leaderboardKey, { member: username, score });
     }
 
-    // Add/update the user's score in the sorted set
-    await redis.zAdd(leaderboardKey, { member: username, score });
+    // Evaluate this run independently from a stronger score the player may
+    // already have saved on the leaderboard.
+    const leadersRaw: unknown[] = await redis.zRange(
+      leaderboardKey,
+      0,
+      10,
+      { by: "rank", reverse: true },
+    );
+    const leaderNames = leadersRaw
+      .map((member) => {
+        if (typeof member === "string") return member;
+        if (member && typeof member === "object" && "member" in member) {
+          return String((member as { member?: unknown }).member ?? "");
+        }
+        return String(member ?? "");
+      })
+      .filter((member) => member.length > 0 && member !== username);
+    const otherScores = await Promise.all(
+      leaderNames.map(async (member) =>
+        Number((await redis.zScore(leaderboardKey, member)) ?? 0),
+      ),
+    );
+    const runRank = otherScores.filter((otherScore) => otherScore >= score)
+      .length + 1;
+    const qualifiesForTopTen = runRank <= 10;
+    const tenthPlaceScore = otherScores[9];
+    const pointsToTopTen = qualifiesForTopTen
+      ? null
+      : tenthPlaceScore === undefined
+        ? null
+        : Math.max(1, tenthPlaceScore - score + 1);
 
-    res.json({ status: "ok", updated: true });
+    res.json({
+      status: "ok",
+      updated,
+      previousBest,
+      isPersonalBest,
+      runRank: qualifiesForTopTen ? runRank : null,
+      pointsToTopTen,
+    });
   } catch (error) {
     console.error("Error in /api/submit-score:", error);
     res.status(500).json({ status: "error", message: "Failed to save score" });

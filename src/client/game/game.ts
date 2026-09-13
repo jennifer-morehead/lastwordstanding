@@ -6,7 +6,9 @@ import {
   InitResponse,
   LeaderboardResponse,
   ScoreBreakdown,
+  SubmitScoreResponse,
 } from "../../shared/types/api";
+import computerWordList from "../../shared/computer-wordlist.json";
 import wordListData from "word-list-json/words.json";
 
 // Build a Set for O(1) lookups - filter to reasonable game words (2-10 letters)
@@ -15,6 +17,11 @@ const validWords = new Set<string>(
     .filter((w: string) => w.length >= 2 && w.length <= 10)
     .map((w: string) => w.toUpperCase()),
 );
+
+// Frequency-ranked common words, intersected with the accepted game
+// dictionary and filtered for computer-safe responses. Player submissions
+// continue to use the broader dictionary above.
+const computerWords = computerWordList.map((word) => word.toUpperCase());
 
 type DailyRuleResponse = { letter?: string };
 
@@ -43,7 +50,7 @@ function isAdminUsername(name: string | null | undefined): boolean {
 }
 
 function formatRuleText(letter: string): string {
-  return `🔶 No words ending in '${letter}'`;
+  return `No words ending in '${letter}'`;
 }
 
 function updateRuleText(letter: string) {
@@ -82,11 +89,41 @@ async function loadDailyRule(): Promise<string> {
 // ============================================================================
 
 type GameScreen = "home" | "gameplay" | "gameover" | "leaderboard" | "scoring";
+let currentScreen: GameScreen = "home";
+
+function updateSharedHeader(screen: GameScreen) {
+  const appHeader = document.getElementById("app-header");
+  appHeader?.classList.toggle("is-home", screen === "home");
+  appHeader?.classList.toggle("is-gameover", screen === "gameover");
+
+  const navButton = document.getElementById(
+    "app-header-nav",
+  ) as HTMLButtonElement | null;
+  const navLabel = document.getElementById("app-header-nav-label");
+  const navIcon = document.getElementById("app-header-nav-icon");
+  if (!navButton || !navLabel || !navIcon) return;
+
+  if (screen === "gameplay") {
+    navButton.hidden = false;
+    navIcon.textContent = "×";
+    navLabel.textContent = "Exit";
+    navButton.setAttribute("aria-label", "Exit current run");
+  } else if (screen === "leaderboard" || screen === "scoring") {
+    navButton.hidden = false;
+    navIcon.textContent = "←";
+    navLabel.textContent = "Back";
+    navButton.setAttribute("aria-label", "Back to home");
+  } else {
+    navButton.hidden = true;
+    navButton.setAttribute("aria-label", "");
+  }
+}
 
 /**
  * Show a specific screen and hide all others
  */
 function showScreen(screen: GameScreen) {
+  currentScreen = screen;
   const screens = [
     "home-screen",
     "gameplay-screen",
@@ -100,6 +137,8 @@ function showScreen(screen: GameScreen) {
     if (!el) return;
     el.style.display = id === `${screen}-screen` ? "block" : "none";
   });
+
+  updateSharedHeader(screen);
 
   if (screen === "leaderboard") {
     fetchLeaderboard();
@@ -122,6 +161,8 @@ const KEYBOARD_LAYOUT = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM⌫"];
 let timeRemaining = WORD_TIME_LIMIT;
 let timerInterval: NodeJS.Timeout | null = null;
 let wordCount = 0;
+let lastCompletedScore = 0;
+let lastCompletedRunToken = 0;
 let usedWords: Set<string> = new Set(); // Track words to prevent repeats
 let lastWordLastLetter = ""; // Track the letter the next word must start with
 let isGameActive = false;
@@ -306,9 +347,18 @@ async function finalizeRunScore(
     console.warn("Falling back to local end-run score:", error);
   }
 
-  persistScore(breakdown.totalPoints).catch((err) => {
+  try {
+    const result = await persistScore(breakdown.totalPoints);
+    if (sessionToken === gameSessionToken) {
+      updateGameOverMessage(result, breakdown.totalPoints);
+    }
+  } catch (err) {
     console.warn("Failed to persist score:", err);
-  });
+  }
+
+  if (sessionToken === lastCompletedRunToken) {
+    lastCompletedScore = breakdown.totalPoints;
+  }
 
   if (sessionToken !== gameSessionToken) {
     return;
@@ -375,6 +425,8 @@ function isInWordList(word: string): boolean {
  */
 function showError(message: string) {
   const input = document.getElementById("word-input") as HTMLInputElement;
+  const gameplayScreen = document.getElementById("gameplay-screen");
+  const turnStatus = document.getElementById("turn-status");
   if (input) {
     // Add error styling to input
     input.classList.add("input-error");
@@ -385,6 +437,16 @@ function showError(message: string) {
       input.classList.remove("input-error");
     }, 2000);
   }
+
+  gameplayScreen?.classList.add("is-error");
+  if (turnStatus) turnStatus.textContent = message.replace(/^❌\s*/, "");
+
+  setTimeout(() => {
+    gameplayScreen?.classList.remove("is-error");
+    if (isGameActive && !isComputerThinking) {
+      updateNextLetterHint(lastWordLastLetter);
+    }
+  }, 2000);
 
   // Show error in console or as visual feedback
   console.warn("Validation error:", message);
@@ -543,17 +605,55 @@ function setupVirtualKeyboard() {
 }
 
 function updateNextLetterHint(requiredLetter: string) {
-  const nextLetterHint = document.getElementById("next-letter-hint");
-  if (nextLetterHint) {
-    nextLetterHint.textContent = `Next: ${requiredLetter}____`;
+  const requiredLetterCopy = document.getElementById("required-letter-copy");
+  const turnStatus = document.getElementById("turn-status");
+  const input = document.getElementById("word-input") as HTMLInputElement | null;
+  const letter = requiredLetter.toUpperCase();
+
+  if (requiredLetterCopy) requiredLetterCopy.textContent = letter;
+  if (input) input.setAttribute("aria-label", `Enter a word beginning with ${letter}`);
+  if (turnStatus) {
+    turnStatus.innerHTML = `Your turn - build from <strong id="required-letter-copy">${letter}</strong>`;
   }
+
+  document.getElementById("gameplay-screen")?.classList.remove("is-computer-turn");
 }
 
 function showComputerThinking() {
-  const nextLetterHint = document.getElementById("next-letter-hint");
-  if (nextLetterHint) {
-    nextLetterHint.textContent = "Computer is thinking...";
-  }
+  const turnStatus = document.getElementById("turn-status");
+  if (turnStatus) turnStatus.textContent = "Computer is building the next link…";
+  const gameplayScreen = document.getElementById("gameplay-screen");
+  gameplayScreen?.classList.remove("is-urgent");
+  gameplayScreen?.classList.add("is-computer-turn");
+}
+
+function showAcceptedHandoff() {
+  const gameplayScreen = document.getElementById("gameplay-screen");
+  gameplayScreen?.classList.remove("is-accepted");
+  // Restart the brief acknowledgement when consecutive turns resolve quickly.
+  window.requestAnimationFrame(() => {
+    gameplayScreen?.classList.add("is-accepted");
+    window.setTimeout(() => {
+      gameplayScreen?.classList.remove("is-accepted");
+    }, 450);
+  });
+}
+
+function renderCurrentWord(word: string) {
+  const currentWordDisplay = document.getElementById("current-word-display");
+  if (!currentWordDisplay) return;
+
+  const normalizedWord = word.toUpperCase();
+  const stem = document.createElement("span");
+  stem.className = "current-word-stem";
+  stem.textContent = normalizedWord.slice(0, -1);
+
+  const handoff = document.createElement("span");
+  handoff.className = "handoff-letter";
+  handoff.textContent = normalizedWord.slice(-1);
+
+  currentWordDisplay.replaceChildren(stem, handoff);
+  currentWordDisplay.setAttribute("aria-label", `Current word: ${normalizedWord}`);
 }
 
 function appendChainWord(
@@ -566,12 +666,18 @@ function appendChainWord(
   const chainWord = document.createElement("span");
   chainWord.className = "chain-word";
 
+  wordChain.querySelectorAll(".chain-word-latest").forEach((item) => {
+    item.classList.remove("chain-word-latest");
+  });
+
   if (source === "computer" || source === "start") {
     chainWord.classList.add("chain-word-computer");
     chainWord.textContent = `🤖 ${word}`;
   } else {
     chainWord.textContent = `✓ ${word}`;
   }
+
+  chainWord.classList.add("chain-word-latest");
 
   wordChain.appendChild(chainWord);
   wordChain.scrollLeft = wordChain.scrollWidth;
@@ -592,7 +698,7 @@ function pickComputerWord(requiredLetter: string): string | null {
   const upperLetter = requiredLetter.toUpperCase();
   const candidates: string[] = [];
 
-  for (const candidate of validWords) {
+  for (const candidate of computerWords) {
     if (!candidate.startsWith(upperLetter)) continue;
     if (candidate.endsWith(currentRuleLetter)) continue;
     if (usedWords.has(candidate)) continue;
@@ -609,6 +715,16 @@ function pickComputerWord(requiredLetter: string): string | null {
  */
 function startTimer() {
   timeRemaining = WORD_TIME_LIMIT;
+  const exitConfirmation = document.getElementById("exit-confirmation");
+  if (exitConfirmation && !exitConfirmation.hidden) {
+    shouldResumeAfterExitPrompt = true;
+    updateTimerDisplay();
+    return;
+  }
+  resumeTimer();
+}
+
+function resumeTimer() {
   updateTimerDisplay();
 
   if (timerInterval) clearInterval(timerInterval);
@@ -619,7 +735,7 @@ function startTimer() {
 
     if (timeRemaining <= 0) {
       stopTimer();
-      endGame("Time ran out! ⏰");
+      endGame();
     }
   }, 1000);
 }
@@ -638,22 +754,16 @@ function stopTimer() {
  * Update the timer display in the UI
  */
 function updateTimerDisplay() {
-  const timerElement = document.getElementById("game-timer");
   const timerBottomElement = document.getElementById("game-timer-bottom");
+  const gameplayScreen = document.getElementById("gameplay-screen");
   const text = `${timeRemaining}s`;
-  if (timerElement) {
-    timerElement.textContent = text;
-    // Change color to red when time is running out
-    if (timeRemaining <= 3) {
-      timerElement.style.color = "#ef4444";
-    }
-  }
   if (timerBottomElement) {
     timerBottomElement.textContent = text;
-    if (timeRemaining <= 3) {
-      timerBottomElement.style.color = "#ef4444";
-    }
   }
+  gameplayScreen?.classList.toggle(
+    "is-urgent",
+    isGameActive && !isComputerThinking && timeRemaining <= 3,
+  );
 }
 
 // GAME LOGIC
@@ -662,7 +772,7 @@ function updateTimerDisplay() {
 /**
  * End the game and transition to game over screen
  */
-function endGame(reason: string) {
+function endGame() {
   if (!isGameActive) return;
   isGameActive = false;
   isComputerThinking = false;
@@ -678,18 +788,18 @@ function endGame(reason: string) {
     "N/A"
   ).toUpperCase();
   const optimisticBreakdown = getLocalScoreBreakdown(basePoints);
+  lastCompletedScore = optimisticBreakdown.totalPoints;
+  lastCompletedRunToken = sessionToken;
+
+  const gameoverMessage = document.getElementById("gameover-message");
+  if (gameoverMessage) gameoverMessage.textContent = "";
 
   // Update game over screen
   const finalWordCountElement = document.getElementById("final-word-count");
   if (finalWordCountElement) {
     finalWordCountElement.textContent = `${basePoints} ${
       basePoints === 1 ? "word" : "words"
-    }`;
-  }
-
-  const gameoverReasonElement = document.getElementById("gameover-reason");
-  if (gameoverReasonElement) {
-    gameoverReasonElement.innerHTML = `<span>${reason}</span>`;
+    } completed`;
   }
 
   updateEndingWordDisplay(endingWord);
@@ -713,9 +823,9 @@ async function submitWord() {
   if (!isGameActive || isComputerThinking) return;
   const input = document.getElementById("word-input") as HTMLInputElement;
   if (!input || input.disabled) return;
-  const word = input?.value.trim();
+  const word = input.value.trim();
 
-  if (!word) return;
+  if (!input.value.trim()) return;
 
   // Validate the word (sync checks first)
   const validation = validateWord(word);
@@ -757,10 +867,8 @@ async function submitWord() {
   if (input) input.value = "";
 
   // Update current word display
-  const currentWordDisplay = document.getElementById("current-word-display");
-  if (currentWordDisplay) {
-    currentWordDisplay.textContent = upperWord;
-  }
+  renderCurrentWord(upperWord);
+  showAcceptedHandoff();
 
   // Computer turn starts: pause timer and lock inputs.
   stopTimer();
@@ -778,7 +886,7 @@ async function submitWord() {
   const computerWord = pickComputerWord(requiredComputerStart);
   if (!computerWord) {
     isComputerThinking = false;
-    endGame("Computer is out of words. You win! 🎉");
+    endGame();
     return;
   }
 
@@ -788,9 +896,8 @@ async function submitWord() {
 
   appendChainWord(computerWord, "computer");
 
-  if (currentWordDisplay) {
-    currentWordDisplay.textContent = computerWord;
-  }
+  renderCurrentWord(computerWord);
+  showAcceptedHandoff();
 
   updateNextLetterHint(lastWordLastLetter);
   isComputerThinking = false;
@@ -807,7 +914,7 @@ async function submitWord() {
  */
 function updatePointsDisplay(points = wordCount) {
   const pointsElements = document.querySelectorAll(
-    "#player-points, #gameplay-points, #gameover-points",
+    "#shared-points, #player-points, #gameplay-points, #gameover-points",
   );
   pointsElements.forEach((el) => {
     el.textContent = points.toString();
@@ -904,6 +1011,52 @@ function renderLeaderboard(entries: LeaderboardEntry[]) {
   });
 }
 
+let shouldResumeAfterExitPrompt = false;
+
+function openExitConfirmation() {
+  if (!isGameActive || currentScreen !== "gameplay") return;
+
+  const confirmation = document.getElementById("exit-confirmation");
+  const keepPlayingButton = document.getElementById(
+    "keep-playing-btn",
+  ) as HTMLButtonElement | null;
+  shouldResumeAfterExitPrompt = !isComputerThinking && timerInterval !== null;
+  stopTimer();
+  if (confirmation) confirmation.hidden = false;
+  keepPlayingButton?.focus();
+}
+
+function closeExitConfirmation(resumePlay: boolean) {
+  const confirmation = document.getElementById("exit-confirmation");
+  if (confirmation) confirmation.hidden = true;
+
+  if (
+    resumePlay &&
+    shouldResumeAfterExitPrompt &&
+    isGameActive &&
+    !isComputerThinking
+  ) {
+    resumeTimer();
+    if (!isVirtualKeyboardMode) {
+      document.getElementById("word-input")?.focus();
+    }
+  }
+  shouldResumeAfterExitPrompt = false;
+}
+
+function abandonCurrentRun() {
+  closeExitConfirmation(false);
+  stopTimer();
+  isGameActive = false;
+  isComputerThinking = false;
+  playerTurnStartedAt = null;
+  gameSessionToken += 1;
+  wordCount = 0;
+  updatePointsDisplay(lastCompletedScore);
+  setInputEnabled(false);
+  showScreen("home");
+}
+
 // ============================================================================
 // EVENT LISTENERS FOR SCREEN TRANSITIONS
 // ============================================================================
@@ -923,6 +1076,10 @@ async function startGame() {
   lastAcceptedWord = "";
   playerTurnStartedAt = null;
   playerSubmitDurationsMs = [];
+
+  document
+    .getElementById("gameplay-screen")
+    ?.classList.remove("is-error", "is-accepted", "is-computer-turn", "is-urgent");
 
   const wordChainEl = document.getElementById("word-chain");
   if (wordChainEl) wordChainEl.innerHTML = "";
@@ -950,13 +1107,9 @@ async function startGame() {
   lastWordLastLetter = getLastLetter(startWord);
   lastAcceptedWord = startWord;
 
-  const currentWordDisplay = document.getElementById("current-word-display");
-  if (currentWordDisplay) {
-    currentWordDisplay.textContent = startWord;
-  }
+  renderCurrentWord(startWord);
 
-  const nextLetterHint = document.getElementById("next-letter-hint");
-  if (nextLetterHint) updateNextLetterHint(lastWordLastLetter);
+  updateNextLetterHint(lastWordLastLetter);
 
   appendChainWord(startWord, "start");
   resetGameOverFeedback();
@@ -972,6 +1125,34 @@ async function startGame() {
 }
 
 function setupEventListeners() {
+  const sharedNavButton = document.getElementById("app-header-nav");
+  sharedNavButton?.addEventListener("click", () => {
+    if (currentScreen === "gameplay") {
+      openExitConfirmation();
+    } else if (currentScreen === "leaderboard" || currentScreen === "scoring") {
+      showScreen("home");
+    }
+  });
+
+  const keepPlayingButton = document.getElementById("keep-playing-btn");
+  keepPlayingButton?.addEventListener("click", () => {
+    closeExitConfirmation(true);
+  });
+
+  const endRunButton = document.getElementById("end-run-btn");
+  endRunButton?.addEventListener("click", abandonCurrentRun);
+
+  document.querySelector("[data-exit-dismiss]")?.addEventListener("click", () => {
+    closeExitConfirmation(true);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const confirmation = document.getElementById("exit-confirmation");
+    if (event.key === "Escape" && confirmation && !confirmation.hidden) {
+      closeExitConfirmation(true);
+    }
+  });
+
   // Home Screen
   const startButton = document.getElementById("start-game");
   startButton?.addEventListener("click", () => {
@@ -1140,13 +1321,61 @@ async function initializeGame() {
 /**
  * Persist player's final score to the server daily leaderboard
  */
-async function persistScore(score: number) {
+function updateGameOverMessage(result: SubmitScoreResponse, runScore: number) {
+  const messageElement = document.getElementById("gameover-message");
+  if (!messageElement) return;
+
+  if (runScore === 0) {
+    messageElement.textContent = "Shake it off. Go again.";
+    return;
+  }
+
+  if (!result.updated && result.previousBest !== null) {
+    const pointsBelowBest = result.previousBest - runScore;
+    if (pointsBelowBest === 0) {
+      messageElement.textContent = "You matched your personal best.";
+    } else {
+      const pointsLabel = pointsBelowBest === 1 ? "point" : "points";
+      messageElement.textContent = `${pointsBelowBest} ${pointsLabel} short of your personal best.`;
+    }
+    return;
+  }
+
+  const rank = result.runRank;
+
+  if (rank === 1) {
+    messageElement.textContent = result.isPersonalBest
+      ? "New personal best. You’re #1 today."
+      : "You’re #1 today.";
+  } else if (rank !== null && rank <= 3) {
+    messageElement.textContent = result.isPersonalBest
+      ? "New personal best. You made today’s top 3."
+      : "You made today’s top 3.";
+  } else if (rank !== null && rank <= 10) {
+    messageElement.textContent = result.isPersonalBest
+      ? "New personal best. You made today’s top 10."
+      : "You made today’s top 10.";
+  } else if (result.isPersonalBest) {
+    messageElement.textContent = "New personal best.";
+  } else if (result.pointsToTopTen !== null) {
+    const pointsLabel = result.pointsToTopTen === 1 ? "point" : "points";
+    messageElement.textContent = `${result.pointsToTopTen} more ${pointsLabel} to reach today’s top 10.`;
+  } else {
+    messageElement.textContent = "";
+  }
+}
+
+async function persistScore(score: number): Promise<SubmitScoreResponse> {
   try {
-    await fetch("/api/submit-score", {
+    const response = await fetch("/api/submit-score", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ score }),
     });
+    if (!response.ok) {
+      throw new Error(`Failed to persist score: HTTP ${response.status}`);
+    }
+    return (await response.json()) as SubmitScoreResponse;
   } catch (error) {
     console.error("Error persisting score:", error);
     throw error;

@@ -11,48 +11,32 @@
   </head>
   <body class="app">
     <div class="app-container">
-      <!-- Splash screen content -->
-      <!-- <div class="splash-card">
-      
-      </div> -->
-
       <div class="splash-header">
         <img
           src="logo_splash.png"
           alt="Last Word Standing"
           class="splash-logo"
         />
-
-        <!-- <div class="splash-icon">⚡</div>
-        <h1 class="splash-title">Last Word</h1>
-        <h1 class="splash-title">Standing</h1> -->
-        <!-- <p class="splash-subtitle">
-          Chain words. Beat the clock. Dominate the leaderboard.
-        </p> -->
       </div>
 
       <div class="splash-body">
-        <p class="splash-subtitle">Chain words, beat the clock</p>
+        <p class="splash-subtitle">Chain words. Beat the clock.</p>
         <button class="start-button" id="start-button">Play</button>
         <div class="post-rule-stack" id="post-rule-stack" hidden>
           <div class="post-number-label" id="post-number-label"></div>
           <div class="post-rule-label" id="post-rule-label"></div>
         </div>
 
-        <!-- Leaderboard preview -->
         <div class="top-players-preview">
-          <div id="top-players" class="top-players-list">
+          <div class="top-players-heading">
+            <span>Today’s leaders</span>
+            <span>Points</span>
+          </div>
+          <div id="top-players" class="top-players-list is-loading">
             <div class="top-player-placeholder">Loading top players…</div>
           </div>
         </div>
       </div>
-      <!-- <footer class="footer">
-        <div class="docs-link" tabindex="0" id="docs-link">Docs</div>
-        <span class="divider">|</span>
-        <div class="docs-link" tabindex="0" id="playtest-link">r/Devvit</div>
-        <span class="divider">|</span>
-        <div class="docs-link" tabindex="0" id="discord-link">Discord</div>
-      </footer> -->
       <script type="module" src="splash/splash.ts" defer></script>
     </div>
   </body>

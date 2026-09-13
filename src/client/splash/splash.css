@@ -24,12 +24,13 @@ body {
 }
 
 .app-container {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  min-height: 100svh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  border-radius: 16px;
+  border-radius: 0;
   box-shadow: none;
   border: none;
   overflow: hidden;
@@ -52,11 +53,12 @@ body {
   background: linear-gradient(135deg, #ff6b35 0%, #ff5520 100%);
   color: white;
   border: none;
-  padding: 8px 48px;
-  border-radius: 50px;
-  font-size: 40px;
-  font-weight: 600;
-  text-transform: uppercase;
+  width: min(320px, 100%);
+  min-height: 64px;
+  padding: 12px 32px;
+  border-radius: 12px;
+  font-size: 30px;
+  font-weight: 700;
   cursor: pointer;
   /* transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3); */
@@ -83,8 +85,8 @@ body {
 
 .splash-header {
   color: white;
-  margin-top: 20px;
-  padding: 16px 24px 0px;
+  margin-top: 16px;
+  padding: 12px 32px 0;
   text-align: center;
 }
 
@@ -94,8 +96,11 @@ body {
 }
 
 .splash-logo {
-  width: min(360px, 72vw);
+  display: block;
+  width: min(228px, calc(100vw - 104px));
   max-width: 100%;
+  height: auto;
+  margin: 0 auto;
 }
 
 .splash-title {
@@ -106,14 +111,14 @@ body {
 }
 
 .splash-subtitle {
-  color: #ff6b35;
-  font-size: 16px;
-  font-weight: 700;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  font-weight: 600;
   text-transform: uppercase;
   text-align: center;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   line-height: 1.1;
-  width: min(360px, 72vw);
+  width: min(320px, 100%);
   padding: 0;
 }
 
@@ -122,48 +127,67 @@ body {
   flex: 1;
   width: 100%;
   flex-direction: column;
-  gap: 0;
+  gap: 18px;
   align-items: center;
-  padding: 0 32px 24px;
+  padding: 0 32px 20px;
 }
 
 .start-button {
+  width: min(276px, 100%);
+  min-height: 56px;
   margin-top: auto;
+  font-size: 27px;
 }
 
 .post-rule-stack {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 3px;
-  min-height: 44px;
-  margin-top: 26px;
-  margin-bottom: auto;
+  justify-content: center;
+  gap: 6px;
+  min-height: 24px;
 }
 
 .top-players-preview {
-  width: min(360px, 100%);
-  margin-bottom: 4vh;
+  width: min(300px, 100%);
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.top-players-heading {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.top-players-heading span {
+  color: inherit;
 }
 
 .top-players-list {
-  margin: 12px 0px;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  padding: 8px;
-  background: white;
-  border-radius: 8px;
-  gap: 8px;
-  border: 1px solid gray;
+  min-height: 96px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 12px;
+  gap: 0;
+  border: 1px solid rgba(255, 255, 255, 0.38);
 }
 
 @media (max-width: 900px) {
   .splash-header {
-    margin-top: 12px;
+    margin-top: 8px;
   }
 
   .splash-logo {
-    width: min(320px, 78vw);
+    width: min(220px, calc(100vw - 96px));
   }
 
   .splash-body {
@@ -171,40 +195,41 @@ body {
   }
 
   .splash-subtitle {
-    width: min(320px, 78vw);
-    font-size: 13px;
+    width: min(276px, 100%);
+    font-size: 12px;
     letter-spacing: 0.08em;
   }
 
   .start-button {
-    font-size: 36px;
-    padding: 8px 40px;
-  }
-
-  .post-rule-stack {
-    margin-top: 22px;
+    width: min(276px, 100%);
+    min-height: 54px;
+    font-size: 26px;
   }
 
   .post-number-label {
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .post-rule-label {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .top-players-preview {
     width: 100%;
-    max-width: 340px;
-    margin-bottom: 2vh;
+    max-width: 300px;
   }
 }
 
 .top-player-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  color: red;
+  min-height: 32px;
+  gap: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.top-player-item:last-child {
+  border-bottom: 0;
 }
 
 .top-player-rank {
@@ -214,7 +239,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 400px;
+  flex: 0 0 20px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .top-player-rank.gold {
@@ -232,6 +259,11 @@ body {
 
 .top-player-name {
   margin-right: 4px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -239,10 +271,57 @@ body {
   margin-left: auto;
   color: #0052ff;
   font-weight: 700;
+  font-size: 13px;
 }
 
 .top-player-placeholder {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 78px;
   color: #6b7280;
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-height: 700px) {
+  .splash-header {
+    margin-top: 0;
+    padding-top: 4px;
+  }
+
+  .splash-logo {
+    width: min(200px, calc(100vw - 112px));
+  }
+
+  .splash-body {
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .start-button {
+    min-height: 52px;
+    font-size: 25px;
+  }
+
+  .top-players-preview {
+    padding-top: 0;
+  }
+
+  .top-players-list {
+    min-height: 82px;
+  }
+
+  .top-player-item {
+    min-height: 27px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start-button {
+    animation: none;
+  }
 }
 
 .howto {
@@ -306,19 +385,21 @@ body {
 
 .post-number-label {
   text-align: center;
-  color: white;
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 .post-rule-label {
   text-align: center;
   color: white;
-  font-size: 18px;
-  font-weight: 700;
-  font-style: italic;
+  font-size: 14px;
+  font-weight: 600;
+  font-style: normal;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .footer {
